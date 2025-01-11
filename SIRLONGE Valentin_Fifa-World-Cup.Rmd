@@ -1,0 +1,351 @@
+---
+title: "**FIFA World Cup**"
+author: "Sirlonge Valentin & Amenu Natnael Berhanu"
+output: html_document   
+---
+\
+ 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(DT)
+library(kableExtra)
+library(forcats)
+library(scales)
+library(maps)
+```
+
+# **Introduction**
+The **FIFA World Cup** is one of the most significant global sporting events, bringing nations together to celebrate football. This report analyzes historical **World Cup data**, exploring trends in *goals scored*, *participating teams*, *host countries*, and *champions*. Using advanced visualizations, we provide insights into key statistics and historical developments.
+\
+\
+
+<center> 
+<img src="https://cdn.mos.cms.futurecdn.net/txf9Xh3BoGA7y4WRs3WowT.jpg" width="600">
+</center>
+\
+\
+
+## **Presentation of the Databases**
+This analysis is based on two datasets that provide complementary insights into the history of the FIFA World Cup and the FIFA world rankings.
+\
+
+#### **1. FIFA World Cup Historical Data**
+The first dataset contains historical **FIFA World Cup** data, including details on *years*, *host countries*, *champions*, *number of goals*, *average goals per game*, and *participating teams*.
+
+```{r Dataset,echo=FALSE, message= FALSE, warning= FALSE, error=FALSE}
+data <- read.csv("FIFA World Cup.csv")
+ranking <- read.csv("fifa_ranking_2022-10-06.csv")
+```
+
+**Key columns:**
+
+* **YEAR** : The year of the tournament.
+* **HOST** : The host country of the event.
+* **CHAMPION** : The country that won the World Cup.
+* **RUNNER.UP** : The country that finished second in the World Cup.
+* **THIRD.PLACE** : The country that finished third in the World Cup.
+* **TEAMS** : Number of participating teams.
+* **MATCHES.PLAYED** : The total matches played in the tournament.
+* **GOALS.SCORED** : The total goals scored in the tournament.
+* **AVG.GOALS.PER.GAME** : The average number of goals scored per match.
+* **RANK** : Rank countries performances by year. 
+\
+\
+
+#### **2. FIFA World Rankings Data**
+The second dataset contains **FIFA World Rankings 2022 data**. It highlights the performance of national teams worldwide, based on their ranking, points, and confederation.
+
+This dataset enables us to analyze the distribution of points, compare rankings across confederations, and identify dominant teams in global football.
+\
+
+**Key columns:**
+
+* **TEAM** : The name of the national team.
+* **TEAM_CODE** : A code that identifies each team.
+* **RANK** : The team's rank as of October 2022.
+* **PREVIOUS_RANK** : The team's rank in the previous ranking period.
+* **POINTS** : The total points achieved by the team.
+* **PREVIOUS_POINTS** : The points in the previous ranking period.
+* **ASSOCIATION** : The confederation to which the team belongs (e.g., UEFA, CONMEBOL).
+\
+\
+\
+
+
+## **Graphical Analysis**
+\
+
+#### Goals Analysis
+\
+
+```{r Total Goals per Edition, echo=FALSE, message= FALSE, warning= FALSE, error=FALSE}
+goals_by_year <- data %>% 
+  group_by(YEAR) %>% 
+  summarise(Total_Goals = sum(GOALS.SCORED))
+
+ggplot(goals_by_year, aes(x = YEAR, y = Total_Goals)) +
+  geom_col(fill = "skyblue") +
+  labs(
+    title = "Total Goals Scored per FIFA World Cup Edition",
+    x = "Year",
+    y = "Goals Scored"
+  ) +
+  theme_minimal()
+```
+\
+\
+
+This chart shows the **evolution of the total number of goals scored** during various FIFA World Cup editions since 1925. A ***general upward trend*** is observed, with ***significant fluctuations in the early years*** and ***stabilization starting in the 1970s***. The ***highest scores are achieved after 2000***, potentially reflecting ***changes in game rules, increased participation, or improvements in offensive strategies***. Variations between editions could also be explained by the ***competition format*** or the ***number of participating teams***.
+\
+\
+\
+\
+
+```{r Average Goals per Match,echo=FALSE, message= FALSE, warning= FALSE, error=FALSE}
+ggplot(data, aes(x = YEAR, y = AVG.GOALS.PER.GAME)) +
+  geom_point(color = "red", size = 3) +
+  geom_line(color = "blue", linetype = "dashed") +
+  labs(
+    title = "Average Goals per Match Over Time",
+    x = "Year",
+    y = "Goals per Match"
+  ) +
+  theme_light()
+```
+\
+\
+
+This chart shows the **average number of goals scored per match** over time during FIFA World Cup tournaments. The data reveals a ***significant peak in 1954***, with ***more than five goals per match***, followed by a ***gradual decline to around three goals per match*** by the 1970s. Since then, the average has remained ***relatively stable, with minor fluctuations***. This downward trend could reflect ***changes in football strategies, defensive improvements, or rule modifications***. The ***consistent stabilization in recent years*** suggests a ***balance between offense and defense in modern football***.
+\
+\
+
+<center> 
+<img src="https://th.bing.com/th/id/OIP.egbq8mQCHjWHwdWVj6ObZQHaE7?rs=1&pid=ImgDetMain" width="500">
+</center>
+\
+\
+\
+
+#### Hosts Countries
+\
+
+```{r Hosts Countries, error=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
+hosts <- read.csv("FIFA World Cup.csv")
+
+hosts_split <- hosts %>%
+  mutate(HOST = strsplit(as.character(HOST), ", ")) %>%  
+  unnest(HOST)  
+
+hosts_split$HOST <- trimws(hosts_split$HOST)  
+hosts_split$HOST[hosts_split$HOST == "United States"] <- "USA"
+hosts_split$HOST[hosts_split$HOST == "Korea Republic"] <- "South Korea"
+hosts_split$HOST[hosts_split$HOST == "West Germany"] <- "Germany"
+hosts_split$HOST[hosts_split$HOST == "England"] <- "UK"
+
+world_map <- map_data("world")
+
+world_map <- world_map %>%
+  mutate(is_host = ifelse(region %in% hosts_split$HOST, "Host Country", "Other Country"))
+
+ggplot(world_map, aes(long, lat, group = group)) +
+  geom_polygon(aes(fill = is_host), color = "white") +
+  scale_fill_manual(
+    values = c("Host Country" = "red", "Other Country" = "gray"),
+    name = "Country Status"
+  ) +
+  labs(
+    title = "FIFA World Cup Host Countries",
+    subtitle = "Highlighting Countries that Hosted the World Cup"
+  ) +
+  theme_void() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 16),
+    plot.subtitle = element_text(hjust = 0.5),
+    legend.position = "right"
+  )
+```
+\
+\
+
+This map highlights the **countries that have hosted the FIFA World Cup**. ***Host countries are shown in red***, while ***non-host countries are displayed in grey***. The map reveals that hosting has been concentrated in ***Europe, South America, and parts of North America and Asia***. Notable host nations include ***Brazil, Germany, France, Italy, and Argentina***, reflecting their historical significance in football. The inclusion of countries from ***Africa (South Africa) and Asia (South Korea and Japan)*** demonstrates FIFA's efforts to globalize the tournament. This geographical diversity highlights the growing reach and inclusiveness of the FIFA World Cup over time.
+\
+\
+
+[Link : List of FIFA World Cup hosts](https://en.wikipedia.org/wiki/List_of_FIFA_World_Cup_hosts)
+\
+\
+\
+
+#### Participating Teams
+\
+
+```{r Number of Teams Over Time, echo=FALSE, message= FALSE, warning= FALSE, error=FALSE}
+ggplot(data, aes(x = YEAR, y = TEAMS)) +
+  geom_line(color = "green", size = 1.2) +
+  geom_point(size = 2.5, color = "orange") +
+  labs(
+    title = "Number of Participating Teams in FIFA World Cups",
+    x = "Year",
+    y = "Number of Teams"
+  ) +
+  theme_minimal()
+
+```
+\
+\
+
+This chart shows the **number of participating teams in FIFA World Cups** over time. The data reveals ***a steady increase in the number of teams***, with ***major expansions occurring in the 1980s and 1990s***. Initially, the tournaments featured ***fewer than 20 teams***, but by the 2000s, the number stabilized at ***32 teams***. These expansions likely reflect ***the growing popularity of football*** and ***efforts to include more countries from different regions***. The consistent participation since the 2000s highlights the ***standardization of tournament formats*** in modern FIFA World Cups.
+\
+\
+
+[ Link : National team appearances in the FIFA World Cup](https://en.wikipedia.org/wiki/National_team_appearances_in_the_FIFA_World_Cup) 
+\
+\
+\
+
+#### Winning Nations
+\
+
+```{r Winning Nations, echo=FALSE, message= FALSE, warning= FALSE, error=FALSE}
+winners <- data %>%
+  group_by(CHAMPION) %>%
+  summarise(Count = n()) %>%
+  arrange(desc(Count))
+
+ggplot(winners, aes(x = fct_reorder(CHAMPION, Count), y = Count, fill = CHAMPION)) +
+  geom_col(show.legend = FALSE) +
+  coord_flip() +
+  labs(
+    title = "Countries with Most FIFA World Cup Wins",
+    x = "Country",
+    y = "Number of Wins"
+  ) +
+  theme_classic()
+
+```
+\
+\
+
+This chart shows the **countries with the most FIFA World Cup wins**. ***Brazil leads with five titles***, followed by ***Italy and Germany (including West Germany) with four titles each***. ***Argentina has three titles***, while ***France and Uruguay each have two titles***. ***Spain and England have each won once***. The dominance of Brazil, Germany, and Italy highlights ***their historical strength in international football***, while Argentina's success emphasizes ***the ongoing competitiveness of South American teams***.
+\
+\
+
+[Link : List of FIFA World Cup Winners](https://en.wikipedia.org/wiki/List_of_FIFA_World_Cup_finals)
+\
+\
+\
+
+#### Host Countries Winning the World Cup
+\
+
+```{r Host Countries Winning, echo=FALSE, message= FALSE, warning= FALSE, error=FALSE}
+host_champions <- data %>%
+  mutate(Host_Champion = ifelse(HOST == CHAMPION, "Won at Home", "Did Not Win at Home")) %>%
+  group_by(Host_Champion) %>%
+  summarise(Count = n())
+
+host_champions <- host_champions %>%
+  mutate(Percentage = round((Count / sum(Count)) * 100, 1))
+
+ggplot(host_champions, aes(x = 2, y = Count, fill = Host_Champion)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar(theta = "y") +
+  xlim(1.5, 2.5) +  
+  geom_text(aes(label = paste0(Percentage, "%")), position = position_stack(vjust = 0.5), color = "white", size = 5) +
+  scale_fill_manual(values = c("Won at Home" = "green", "Did Not Win at Home" = "red")) +
+  labs(
+    title = "Proportion of Host Countries Winning the FIFA World Cup",
+    subtitle = "Comparison of Hosts Winning vs. Not Winning",
+    fill = "Outcome"
+  ) +
+  theme_void() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(size = 12, hjust = 0.5),
+    legend.position = "bottom"
+  )
+
+```
+
+\
+\
+
+This pie chart illustrates the **proportion of host countries winning the FIFA World Cup**. ***27.3% of host countries have won the tournament at home***, shown in green, while ***72.7% did not win at home***, represented in red. This data highlights that although hosting may provide an advantage, the majority of host nations have not secured the trophy. The success of host nations reflects both ***the strength of the teams*** and ***the unique pressures or benefits of playing at home***.
+\
+\
+
+<center> 
+<img src="https://i.redd.it/9b7katk6uz0a1.jpg" width="300">
+</center>
+\
+\
+\
+
+## **Definition: Key Insights**
+\
+
+1. **Growth in Popularity** : Over the years, the number of participating teams and goals scored has steadily increased, showcasing the global expansion of the World Cup.
+
+2. **Dominance of Certain Nations** : Countries like Brazil, Germany, and Italy dominate the tournament’s history, reflecting consistent football excellence.
+
+3. **Host Impact**: Hosting often provides an advantage, as seen with several host nations winning or performing well.
+\
+\
+\
+
+#### Interactive Table
+\
+
+```{r Interactive Table, echo=FALSE, message= FALSE, warning= FALSE, error=FALSE}
+datatable(
+  data %>% select(YEAR, HOST, CHAMPION, TEAMS, GOALS.SCORED),
+  options = list(pageLength = 5, scrollX = TRUE)
+)
+```
+\
+\
+
+This interactive table summarizes the **early editions of the FIFA World Cup**. ***Uruguay hosted and won the inaugural tournament in 1930***, with ***13 teams participating*** and ***70 goals scored***. In 1934, ***Italy hosted and claimed victory***, with ***16 teams*** and an identical ***70 goals scored***. Italy retained their title in 1938 in ***France, with 15 teams participating*** and ***84 goals scored***. After World War II, the tournament resumed in ***Brazil in 1950, where Uruguay won again***, with ***13 teams and 88 goals***. The ***1954 edition in Switzerland saw West Germany win their first title***, with ***16 teams and a record 140 goals scored*** at the time.
+\
+\
+\
+
+#### Table Top 10 FIFA World Rankings 2022
+\
+
+```{r Visualisation Table, echo=FALSE, message= FALSE, warning= FALSE, error=FALSE }
+top_10 <- ranking %>% head(10)
+
+top_10 %>%
+  select(rank, team, points, association) %>% 
+  kbl(caption = "Top 10 FIFA World Rankings (2022)") %>%
+  kable_classic_2(full_width = FALSE) %>%
+  column_spec(3, bold = TRUE, color = spec_color(top_10$points, end = 0.7)) %>%
+  row_spec(1, background = "lightblue", bold = TRUE)
+
+```
+\
+\
+
+This table shows the **Top 10 FIFA World Rankings for 2022**, highlighting the leading national teams based on points. ***Brazil ranks first*** with ***1841.30 points***, representing ***CONMEBOL***, followed by ***Belgium in second place*** with ***1816.71 points*** and ***Argentina in third*** with ***1773.88 points***, also from ***CONMEBOL***. ***France ranks fourth*** with ***1759.78 points***, leading a strong presence of UEFA teams in the top 10. Other notable teams include ***England (5th), Italy (6th), Spain (7th), Netherlands (8th), Portugal (9th), and Denmark (10th)***, all from ***UEFA***. This distribution reflects the dominance of European and South American teams in global football rankings.
+\
+\  
+
+<center>  
+<img src="https://wallpapercave.com/wp/wp11210961.jpg" width="550">
+</center>
+\
+\
+
+## **Conclusion** 
+
+The analysis of **FIFA World Cup data** highlights several key insights about the tournament's history and trends. Over time, the ***number of participating teams has steadily increased***, reflecting the ***growing global popularity of football*** and efforts to make the competition more inclusive. Despite this expansion, only a ***few nations dominate in terms of victories***, with ***Brazil, Italy, and Germany leading the rankings***. ***Host nations occasionally benefit from a home advantage***, as seen with ***27.3% of them winning the tournament*** on their soil, but the majority still fall short. The ***evolution of goals scored per match*** reveals a ***shift in football dynamics***, with a ***high-scoring era in the mid-20th century*** giving way to more ***defensively balanced games***. Geographically, the tournament has reached ***diverse regions***, with hosting now spanning ***five continents***, underscoring ***FIFA's efforts to globalize the event***. Overall, the data demonstrates the ***competitive nature of the World Cup*** while highlighting the ***historical dominance of traditional football powerhouses*** and the ***tournament’s ability to unite nations worldwide***.
+\
+\
+\
+\
+
+
